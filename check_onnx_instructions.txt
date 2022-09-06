@@ -1,0 +1,36 @@
+check_vnn_onnx.m Instructions
+------------------------------
+"check_vnn_onnx.m" checks each VNN onnx model to see if it can be
+loaded into Matlab. It can be easily modified to run everything at
+once. However, faster to run on several processes.
+
+Setup
+-----
+- In check_vnn_onnx.m, ensure that the `path` variable indicates the path
+  to the vnncomp2022_benchmarks/benchmarks/ folder on your local machine.
+
+How to
+------
+To run the file, indicate which benchmark to analyze. Options include:
+ - "acasxu"
+ - "carvana_unet_2022"
+ - "cifar100_tinyimagenet_resnet"
+ - "cifar2020"
+ - "cifar_biasfield"
+ - "collins_rul_cnn"
+ - "mnist_fc"
+ - "nn4sys"
+ - "oval21"
+ - "reach_prob_density"
+ - "rl_benchmarks"
+ - "sri_resnet_a"
+ - "sri_resnet_b"
+ - "test"
+ - "tllverifybench"
+ - "vggnet16_2022"
+
+E.g.
+------
+>> check_vnn_onnx("cifar2020")
+
+>> check_vnn_onnx("nn4sys")
