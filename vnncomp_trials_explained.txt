@@ -25,7 +25,7 @@ The following commands may work:
 >> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/carvana_unet_2022/onnx/unet_simp_small.onnx',FoldConstants="deep", OutputLayerType='classification');
 
 
-They return a netowrk/layergraph with no errors, all have the same output. The problem is there are two custom layers in simp and 4 in the upsample one. These seem like tehy may require some extra work very difficult to automate. Is these layers are in the input or output, it could get done, but in the middle... I'm not so sure.
+They return a network/layergraph with no errors, all have the same output. The problem is there are two custom layers in simp and 4 in the upsample one. These seem like tehy may require some extra work very difficult to automate. Is these layers are in the input or output, it could get done, but in the middle... I'm not so sure.
 
 
 ------------------------------------------------------------

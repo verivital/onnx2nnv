@@ -13,15 +13,19 @@ switch nargin
     % Only onnx network as input
     case 1
         try
-            net = importONNXLayers(onnxFile, 'GenerateCustomLayers', false);
+            net = importONNXNetwork(onnxFile, 'GenerateCustomLayers', false);
         catch
             warning('Using default options. Could not load the neural network with no custom layers');
             % If error when no custom layer generation options, try setting
             % input and output type, if still error, just load the layers
             try
-                net = importONNXLayers(onnxFile, 'GenerateCustomLayers', false, 'InputDataFormat', 'BSSC', 'OutputDataFormat', 'BC');
+                net = importONNXNetwork(onnxFile, 'GenerateCustomLayers', false, 'InputDataFormat', 'BSSC', 'OutputDataFormat', 'BC');
             catch
-                net = importONNXLayers(onnxFile);
+                try
+                    net = importONNXLayers(onnxFile, 'InputDataFormat', 'BSSC', 'OutputDataFormat', 'BC', 'FoldConstants', "deep");
+                catch
+                    net = importONNXLayers(onnxFile, FoldConstants="deep");
+                end
             end
         end
     % Onnx network + loading options as inputs (Parsing inputs)
@@ -63,7 +67,7 @@ switch nargin
             try
                 net = importONNXLayers(onnxFile, 'GenerateCustomLayers', false, 'InputDataFormat', 'BSSC', 'OutputDataFormat', 'BC');
             catch
-                net = importONNXLayers(onnxFile);
+                net = importONNXLayers(onnxFile, FoldConstants="deep");
             end
         end
 end
@@ -77,8 +81,8 @@ end
 % There are different arguments to be passed in the onnx importers, please
 % see importONNXNetwork and importONNXLayers for more info.
 
-%% Step 2. Convert nework into NNV format
-nn = matlab2nnv(net); % Can use ta separate function and add it to utils, or use a NN.parse function
+%% Step 2. Convert network into NNV format
+nn = matlab2nnv(net); % Can use this separate function and add it to utils, or use a NN.parse function
 
 
 
