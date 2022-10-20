@@ -39,6 +39,7 @@ conns = 'default';
 %     "nnet.keras.layer.FlattenCStyleLayer";
 %     "nnet.cnn.layer.FlattenLayer";
 %     "nnet.onnx.layer.FlattenLayer";
+%     "nnet.onnx.layer.FlattenInto2dLayer";
 %     "nnet.onnx.layer.SigmoidLayer";
 %     "nnet.onnx.layer.ElementwiseAffineLayer"];
 
@@ -56,20 +57,20 @@ for i=1:n
         end
     else
         fprintf('\nParsing Layer %d... \n', i);
-        if isa(L, "nnet.onnx.layer.ElementwiseAffineLayer")
-            layer = parse_elementWise(L, nnvLayers{count-1});
-            if ~isempty(layer)
-                if isa(layer, 'cell')
-                    Li = layer{1}; % Substitute layer (bias added)
-                    count = count - 1;
-%                     continue
-                else
-                    Li = layer; % add a layer (fullyconnected)
-                end
-            else
-                continue
-            end        
-        elseif isa(L, 'nnet.cnn.layer.ImageInputLayer')
+%         if isa(L, "nnet.onnx.layer.ElementwiseAffineLayer")
+%             layer = parse_elementWise(L, nnvLayers{count-1});
+%             if ~isempty(layer)
+%                 if isa(layer, 'cell')
+%                     Li = layer{1}; % Substitute layer (bias added)
+%                     count = count - 1;
+% %                     continue
+%                 else
+%                     Li = layer; % add a layer (fullyconnected)
+%                 end
+%             else
+%                 continue
+%             end        
+        if isa(L, 'nnet.cnn.layer.ImageInputLayer')
             Li = ImageInputLayer.parse(L);
         elseif isa(L, 'nnet.cnn.layer.Convolution2DLayer') 
             Li = Conv2DLayer.parse(L);
@@ -89,12 +90,13 @@ for i=1:n
             end
         elseif isa(L, 'nnet.cnn.layer.PixelClassificationLayer')
             Li = PixelClassificationLayer.parse(L);
-        elseif isa(L, 'nnet.keras.layer.FlattenCStyleLayer') || isa(L, 'nnet.cnn.layer.FlattenLayer') || isa(L, 'nnet.onnx.layer.FlattenLayer')
+        elseif isa(L, 'nnet.keras.layer.FlattenCStyleLayer') || isa(L, 'nnet.cnn.layer.FlattenLayer') || isa(L, 'nnet.onnx.layer.FlattenLayer') ...
+                || isa(L, 'nnet.onnx.layer.FlattenInto2dLayer')
             Li = FlattenLayer.parse(L);
         elseif isa(L, 'nnet.keras.layer.SigmoidLayer') || isa(L, 'nnet.onnx.layer.SigmoidLayer')
             Li = SigmoidLayer.parse(L);
-%         elseif isa(L, 'nnet.onnx.layer.ElementwiseAffineLayer')
-%             Li = ElementwiseAffineLayer.parse(L);
+        elseif isa(L, 'nnet.onnx.layer.ElementwiseAffineLayer')
+            Li = ElementwiseAffineLayer.parse(L);
         elseif contains(class(L), ["flatten"; "Flatten"])
             if isempty(nnvLayers) || isa(nnvLayers{end}, 'ImageInputLayer')
                 fprintf('Discard flatten layer for analysis if directly after the input. \n')
@@ -103,6 +105,28 @@ for i=1:n
                 fprintf('Layer %d is a %s which have not supported yet in nnv, please consider removing this layer for the analysis \n', i, class(L));
                 error('Unsupported Class of Layer');
             end
+        % Need t double check if we an add this. Looks a little more
+        % complicated for these assumptions to hold
+%         elseif contains(class(L), "Shape_To_ReshapeLayer")
+%             fprintf('Layer %d is a %s which is not directly supported. ', i, class(L));
+%             warning('Trying to parse it under the assummption that is equivalent to a flatten layer.')
+%             nonlearnables = fieldnames(L.ONNXParams.Nonlearnables);
+%             for names = nonlearnables
+%                 if contains(names, "UnsqueezeAxes")
+%                     permuts = names(14:end);
+%                     break; % we found it, no need to keep going
+%                 end
+%             end
+%             if strcmp(permuts, "1023") || strcmp(permuts, "102")
+%                 Li = FlattenLayer(L.name, L.NumInputs, L.NumOutputs, L.InputNames, L.OutputNames);
+%                 Li.Type = 'nnet.onnx.layer.FlattenLayer'; % C-style (ONNX default)
+%             elseif strcmp(permuts, "0123") || strcmp(permuts, "012")
+%                 Li = FlattenLayer(L.name, L.NumInputs, L.NumOutputs, L.InputNames, L.OutputNames);
+%                 Li.Type = 'nnet.cnn.layer.FlattenLayer'; % MATLAB default
+%             else
+%                 fprintf('Parsing of layer %d, a %s, failed. Please consider removing this layer for the analysis \n', i, class(L));
+%                 error('Unsupported Layer');
+%             end
         else
 %             if contains(class(L),'Flatten') && isempty(nnvLayers)
 %                 fprintf('\nLayer %d is a %s . For this analysis, we can discard this function for now', i, class(L));
@@ -125,41 +149,43 @@ net = NN(nnvLayers,conns);
 % the custom flatten layers. Remove that, "squeeze" input size and reshape
 % based on parameters of next layer.
 
-function layer = parse_elementWise(L, Lprev)
-    layer = [];
-    if ~L.DoScale && ~L.DoOffset
-        fprintf('We can neglect this Elementwise Affine Layer, no operations added. \n')
-    elseif ~L.DoScale && L.DoOffset
-        if all(L.Offset == 0)
-            fprintf('We can neglect this Elementwise AffineLayer, no operations added. \n')
-        else
-            if isa(Lprev, 'FullyConnectedLayer')
-                if all(Lprev.Bias == 0)
-                    b = reshape(L.Offset, [], 1); % ensure bias is a column vector
-                    Lprev.Bias = b; % update last layer, reduce number of layers
-                    layer = {Lprev}; % change it to a cell to substitute the previous layer
-                    fprintf('Adding weights to the previous layer. \n')
-                else
-                    layer = FullyConnectedLayer(L.Scale, L.Offset);
-                    fprintf('Creating a fullyconnected layer with only bias vector in place of the Elementwise Affina Layer. \n')
-                end
-            end
-        end
-    else
-        if all(L.Scale == 1) && all(L.Offset == 0)
-            fprintf('We can neglect this Elementwise AffineLayer, no operations added. \n')
-        else
-            b = reshape(L.Offset, [], 1); % ensure bias is a column vector
-            if size(L.Scale,1) == size(b,1)
-                W = L.Scale;
-            else
-                W = L.Scale';
-            end
-            layer = FullyConnectedLayer(W,b);
-            fprintf('Creating a fullyconnected layer in place of the Elementwise Affine Layer. \n')
-        end
-    end
-end
+% function layer = parse_elementWise(L, Lprev)
+%     layer = [];
+%     if ~L.DoScale && ~L.DoOffset
+%         fprintf('We can neglect this Elementwise Affine Layer, no operations added. \n')
+%     elseif ~L.DoScale && L.DoOffset
+%         if all(L.Offset == 0)
+%             fprintf('We can neglect this Elementwise AffineLayer, no operations added. \n')
+%         else
+%             if isa(Lprev, 'FullyConnectedLayer')
+%                 if all(Lprev.Bias == 0)
+%                     b = reshape(L.Offset, [], 1); % ensure bias is a column vector
+%                     Lprev.Bias = b; % update last layer, reduce number of layers
+%                     layer = {Lprev}; % change it to a cell to substitute the previous layer
+%                     fprintf('Adding weights to the previous layer. \n')
+%                 else
+%                     layer = FullyConnectedLayer(L.Scale, L.Offset);
+%                     fprintf('Creating a fullyconnected layer with only bias vector in place of the Elementwise Affina Layer. \n')
+%                 end
+%             else
+%                 layer = FullyConnectedLayer([],reshape(L.Offset, [], 1)); % no weights, just bias
+%             end
+%         end
+%     else
+%         if all(L.Scale == 1) && all(L.Offset == 0)
+%             fprintf('We can neglect this Elementwise AffineLayer, no operations added. \n')
+%         else
+%             b = reshape(L.Offset, [], 1); % ensure bias is a column vector
+%             if size(L.Scale,1) == size(b,1)
+%                 W = L.Scale;
+%             else
+%                 W = L.Scale';
+%             end
+%             layer = FullyConnectedLayer(W,b);
+%             fprintf('Creating a fullyconnected layer in place of the Elementwise Affine Layer. \n')
+%         end
+%     end
+% end
 
 end
 

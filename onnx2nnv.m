@@ -24,7 +24,11 @@ switch nargin
                 try
                     net = importONNXLayers(onnxFile, 'InputDataFormat', 'BSSC', 'OutputDataFormat', 'BC', 'FoldConstants', "deep");
                 catch
-                    net = importONNXLayers(onnxFile, FoldConstants="deep");
+                    try 
+                        net = importONNXLayers(onnxFile, 'OutputDataFormat', 'BC', 'FoldConstants', "deep");
+                    catch
+                        net = importONNXLayers(onnxFile);
+                    end
                 end
             end
         end

@@ -32,7 +32,34 @@ acas2 = onnx2nnv(vnnFolder + acasFile);
 % Working on adding support
 
 % subFolder = 'cifar100_tinyimagenet_resnet/onnx';
-cifarSmallFile = "cifar100_tinyimagenet_resnet/onnx/CIFAR100_resnet_small.onnx";
-cifarSmall = onnx2nnv(vnnFolder + cifarSmallFile);
+try
+    cifarSmallFile = "cifar100_tinyimagenet_resnet/onnx/CIFAR100_resnet_small.onnx";
+    cifarSmall = onnx2nnv(vnnFolder + cifarSmallFile);
+catch ME_cifarSmall
+    warning('Resnets are not yet supported')
+end
 
+%% Example 4 -- CIFAR2020
+% cifar2020File = "cifar2020/onnx/cifar10_2_255.onnx";
+% cifar2020_options = struct;
+% cifar2020_options.OutputDataFormat = "BC";
+% cifar2020 = onnx2nnv(vnnFolder+cifar2020File, cifar2020_options);
 
+% This generates a matlab network with a shape to reshape layer (unsupported)
+% This layer has ONNXParameters.NonLearnables.UnsqueezeAxesXXXX
+% Need to double check, but the numbers after that variable might be the
+% order in which the dimensions of the input to this layer "unsqueeze" to
+% form a vector for the next layer
+
+cifarSimplifiedFile = "cifar2020/onnx/cifar10_2_255_simplified.onnx";
+cifarSimplified = onnx2nnv(vnnFolder + cifarSimplifiedFile);
+
+convReluFile = "cifar2020/onnx/convBigRELU__PGD.onnx";
+convRelu = onnx2nnv(vnnFolder + convReluFile);
+
+%% Example 5 -- cifarbiasfield
+cifarBias0File = "cifar_biasfield/onnx/cifar_bias_field_0.onnx";
+% cifarBias0 = onnx2nnv(vnnFolder+cifarBias0File);
+net = importONNXLayers(vnnFolder+cifarBias0File, InputDataFormats="BC");
+x = rand(1,16);
+y = net(x);
