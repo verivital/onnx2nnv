@@ -24,7 +24,14 @@ if length(sources) ~= height(conns) || length(targets) ~= height(conns)
     error('Sorry, we currently do not support this type of neural networks. NNV does not support skipped or sparse connections');
 end
 % We need to update this in the future, but let's keep it simple for now
-conns = 'default';
+% conns = 'default';
+% Initialize connection list again
+% we need to create a map between the name of the layer and the order iin
+% which they appear in the NN model
+% Steps to make this work:
+% 1) create a hashmap matching names to number of layers that we consider in NNV
+% 2) for layers not considered, substitute the layer name by the input name
+% 3) last step, reduce the connections table to avoid source == destination connections
 
 %% Transform to NNV (to implement)
 % For now, just check if we could support it
@@ -45,31 +52,27 @@ conns = 'default';
 
 n = length(Layers);
 nnvLayers = {};
-count = 1; % nuber of layers added to NNV
+count = 1; % number of layers added to NNV
+% Initialize mapping from name to number
+% name2number = containers.Map('input', 0);
+names = [];
+indxs = [];
+
 
 for i=1:n
     L = Layers(i);
     if isa(L, 'nnet.cnn.layer.DropoutLayer') || isa(L, 'nnet.cnn.layer.SoftmaxLayer') || isa(L, 'nnet.cnn.layer.ClassificationOutputLayer') ...
             || isa(L,"nnet.onnx.layer.VerifyBatchSizeLayer") || isa(L, "nnet.cnn.layer.RegressionOutputLayer")
-        fprintf('Layer %d is a %s class which is neglected in the analysis phase \n', i, class(L));                   
+        fprintf('Layer %d is a %s class which is neglected in the analysis phase \n', i, class(L));
+        % Substitute their names in destinations and sources
+        % Or even easier, assign this name to match the prevoius layer, easier to refactor
+        names = [names; string(Li.Name)];
+        indxs = [indxs; count];
         if isa(L, 'nnet.cnn.layer.ClassificationOutputLayer')
             outputSize = L.OutputSize;
         end
     else
         fprintf('\nParsing Layer %d... \n', i);
-%         if isa(L, "nnet.onnx.layer.ElementwiseAffineLayer")
-%             layer = parse_elementWise(L, nnvLayers{count-1});
-%             if ~isempty(layer)
-%                 if isa(layer, 'cell')
-%                     Li = layer{1}; % Substitute layer (bias added)
-%                     count = count - 1;
-% %                     continue
-%                 else
-%                     Li = layer; % add a layer (fullyconnected)
-%                 end
-%             else
-%                 continue
-%             end        
         if isa(L, 'nnet.cnn.layer.ImageInputLayer')
             Li = ImageInputLayer.parse(L);
         elseif isa(L, 'nnet.cnn.layer.Convolution2DLayer') 
@@ -105,28 +108,6 @@ for i=1:n
                 fprintf('Layer %d is a %s which have not supported yet in nnv, please consider removing this layer for the analysis \n', i, class(L));
                 error('Unsupported Class of Layer');
             end
-        % Need t double check if we an add this. Looks a little more
-        % complicated for these assumptions to hold
-%         elseif contains(class(L), "Shape_To_ReshapeLayer")
-%             fprintf('Layer %d is a %s which is not directly supported. ', i, class(L));
-%             warning('Trying to parse it under the assummption that is equivalent to a flatten layer.')
-%             nonlearnables = fieldnames(L.ONNXParams.Nonlearnables);
-%             for names = nonlearnables
-%                 if contains(names, "UnsqueezeAxes")
-%                     permuts = names(14:end);
-%                     break; % we found it, no need to keep going
-%                 end
-%             end
-%             if strcmp(permuts, "1023") || strcmp(permuts, "102")
-%                 Li = FlattenLayer(L.name, L.NumInputs, L.NumOutputs, L.InputNames, L.OutputNames);
-%                 Li.Type = 'nnet.onnx.layer.FlattenLayer'; % C-style (ONNX default)
-%             elseif strcmp(permuts, "0123") || strcmp(permuts, "012")
-%                 Li = FlattenLayer(L.name, L.NumInputs, L.NumOutputs, L.InputNames, L.OutputNames);
-%                 Li.Type = 'nnet.cnn.layer.FlattenLayer'; % MATLAB default
-%             else
-%                 fprintf('Parsing of layer %d, a %s, failed. Please consider removing this layer for the analysis \n', i, class(L));
-%                 error('Unsupported Layer');
-%             end
         else
 %             if contains(class(L),'Flatten') && isempty(nnvLayers)
 %                 fprintf('\nLayer %d is a %s . For this analysis, we can discard this function for now', i, class(L));
@@ -135,12 +116,16 @@ for i=1:n
         end
         % Add layer
         nnvLayers{count} = Li;
+        names = [names; string(Li.Name)];
+        indxs = [indxs; count];
+%         name2number(Li.Name,count);
         count = count + 1; 
     end
 end
+name2number = containers.Map(names,indxs);
 
 % Create neural network
-net = NN(nnvLayers,conns);
+net = NN(nnvLayers,conns, name2number);
 
 %% Future todos
 % Check the layer and parse each layer how we have it in NNV

@@ -2,7 +2,8 @@
 % We are going to load several neural networks using the function onnx2nnv
 
 % vnn comp folder
-vnnFolder = "/home/manzand/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/"; 
+% vnnFolder = "/home/manzand/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
+vnnFolder = "/home/dieman95/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
 % To replicate the results, plesae update the vnn comp folder as well as
 % individual files (onnx) for each benchmark
 
