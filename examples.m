@@ -61,6 +61,14 @@ convRelu = onnx2nnv(vnnFolder + convReluFile);
 %% Example 5 -- cifarbiasfield
 cifarBias0File = "cifar_biasfield/onnx/cifar_bias_field_0.onnx";
 % cifarBias0 = onnx2nnv(vnnFolder+cifarBias0File);
-net = importONNXLayers(vnnFolder+cifarBias0File, InputDataFormats="BC");
-x = rand(1,16);
-y = net(x);
+% net = importONNXLayers(vnnFolder+cifarBias0File, InputDataFormats="BC");
+
+%% Example 6 -- colins_rul_cnn
+rulFull20File = "collins_rul_cnn/onnx/NN_rul_full_window_20.onnx";
+rulFull20 = onnx2nnv(vnnFolder+rulFull20File);
+
+% This example looks like it has a conv2D layer that should be a fc layer
+% Need to add support for these type of occasions
+% Either convert it to a fc layer (check that filter sizes and all of that
+% match the fc), or add support within the conv2D layer. I think
+% trasformation will be easier
