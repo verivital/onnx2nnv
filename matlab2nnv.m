@@ -57,7 +57,8 @@ count = 1; % number of layers added to NNV
 % name2number = containers.Map('input', 0);
 names = [];
 indxs = [];
-
+replace_layers = {};
+countRep = 1;
 
 for i=1:n
     L = Layers(i);
@@ -65,12 +66,15 @@ for i=1:n
             || isa(L,"nnet.onnx.layer.VerifyBatchSizeLayer") || isa(L, "nnet.cnn.layer.RegressionOutputLayer")
         fprintf('Layer %d is a %s class which is neglected in the analysis phase \n', i, class(L));
         % Substitute their names in destinations and sources
-        % Or even easier, assign this name to match the prevoius layer, easier to refactor
-        names = [names; string(Li.Name)];
-        indxs = [indxs; count];
+        % Or even easier, assign this name to match the previous layer, easier to refactor
         if isa(L, 'nnet.cnn.layer.ClassificationOutputLayer')
             outputSize = L.OutputSize;
         end
+        replace_layers{countRep} = {Li.Name; L.Name};
+        countRep = countRep + 1;
+%         names = [names; string(L.Name)];
+%         indxs = [indxs; count-1];
+        continue;
     else
         fprintf('\nParsing Layer %d... \n', i);
         if isa(L, 'nnet.cnn.layer.ImageInputLayer')
@@ -116,7 +120,7 @@ for i=1:n
         end
         % Add layer
         nnvLayers{count} = Li;
-        names = [names; string(Li.Name)];
+        names = [names; string(L.Name)];
         indxs = [indxs; count];
 %         name2number(Li.Name,count);
         count = count + 1; 
@@ -124,8 +128,49 @@ for i=1:n
 end
 name2number = containers.Map(names,indxs);
 
+% Next step: Connections
+sources = conns.Source;
+dests = conns.Destination;
+
+% Convert connection to number (corresponding index in array)
+for k= 1:length(sources)
+    if any(contains(names, sources{k}))
+        sources{k} = name2number(sources{k});
+    end
+    if any(contains(names, dests{k}))
+        dests{k} = name2number(dests{k});
+    end
+end
+
+% Change all other connections to previous layer
+for k = 1:length(sources)
+    if ~isnumeric(dests{k})
+        dests{k} = sources{k};
+    end
+    if ~isnumeric(sources{k})
+        sources{k} = dests{k-1};
+    end
+end
+
+% Remove all duplicate connections
+new_sources = [];
+new_dests = [];
+for k=1:length(sources)
+    if sources{k} ~= dests{k}
+        new_sources = [new_sources; sources{k}];
+        new_dests = [new_dests; dests{k}];
+    else
+        if k == length(sources)
+            new_dests = [new_dests; dests{k}+1];
+            new_sources = [new_sources; sources{k}];
+        end
+    end
+end
+
+ConnectionsTable = table(new_sources, new_dests, 'VariableNames', {'Source', 'Destination'});
+
 % Create neural network
-net = NN(nnvLayers,conns, name2number);
+net = NN(nnvLayers, ConnectionsTable, name2number);
 
 %% Future todos
 % Check the layer and parse each layer how we have it in NNV
