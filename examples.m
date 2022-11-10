@@ -14,9 +14,21 @@ acasFile = "acasxu/onnx/ACASXU_run2a_2_4_batch_2000.onnx";
 acasOptions.InputDataFormat = 'BCSS'; % loading options
 acas1 = onnx2nnv(vnnFolder + acasFile, acasOptions);
 
-acasFile = "acasxu/onnx/ACASXU_run2a_2_4_batch_2000.onnx";
+% acasFile = "acasxu/onnx/ACASXU_run2a_2_4_batch_2000.onnx";
 % acasOptions.InputDataFormat = 'BCSS'; % loading options
-acas2 = onnx2nnv(vnnFolder + acasFile);
+% acas2 = onnx2nnv(vnnFolder + acasFile);
+
+% Evaluation example
+x = [0;0;0;0;0];
+y = acas1.evaluate(x);
+% Reachability example
+lb = [0;0;0;0;0];
+ub = [0;0;0;0;0];
+X = ImageStar(lb,ub);
+reachOptions = struct;
+reachOptions.reachMethod = 'approx-star';
+reachOptions.dis_opt = 'display';
+Y = acas1.reach(X, reachOptions);
 
 %% Example 2 -- carvana unets (not supported)
 % No need to run
@@ -54,13 +66,22 @@ end
 
 cifarSimplifiedFile = "cifar2020/onnx/cifar10_2_255_simplified.onnx";
 cifarSimplified = onnx2nnv(vnnFolder + cifarSimplifiedFile);
+lb = zeros([32 32 3]);
+ub = zeros([32 32 3]);
+X = ImageStar(lb,ub);
+Y = cifarSimplified.reach(X, reachOptions);
 
 convReluFile = "cifar2020/onnx/convBigRELU__PGD.onnx";
-convRelu = onnx2nnv(vnnFolder + convReluFile);
+convReluOpts.InputDataFormat = 'BCSS';
+convRelu = onnx2nnv(vnnFolder + convReluFile, convReluOpts);
+lb = zeros([32 32 3]);
+ub = zeros([32 32 3]);
+X = ImageStar(lb,ub);
+% Y = convRelu.reach(X, reachOptions); % try relax start, too slow otherwise
 
 %% Example 5 -- cifarbiasfield
 cifarBias0File = "cifar_biasfield/onnx/cifar_bias_field_0.onnx";
-% cifarBias0 = onnx2nnv(vnnFolder+cifarBias0File);
+cifarBias0 = onnx2nnv(vnnFolder+cifarBias0File);
 % net = importONNXLayers(vnnFolder+cifarBias0File, InputDataFormats="BC");
 
 %% Example 6 -- colins_rul_cnn
@@ -72,3 +93,10 @@ rulFull20 = onnx2nnv(vnnFolder+rulFull20File);
 % Either convert it to a fc layer (check that filter sizes and all of that
 % match the fc), or add support within the conv2D layer. I think
 % trasformation will be easier
+
+%% Example 7 --  mnist_fc
+mnist_fc2_file = 'mnist_fc/onnx/mnist-net_256x2.onnx';
+mnistOpts.InputDataFormat = 'BC';
+mnistfc2 = onnx2nnv(vnnFolder+mnist_fc2_file, mnistOpts);
+
+

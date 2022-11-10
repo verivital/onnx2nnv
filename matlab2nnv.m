@@ -170,7 +170,7 @@ end
 ConnectionsTable = table(new_sources, new_dests, 'VariableNames', {'Source', 'Destination'});
 
 % Create neural network
-net = NN(nnvLayers, ConnectionsTable, name2number);
+net = NN(nnvLayers, ConnectionsTable);
 
 %% Future todos
 % Check the layer and parse each layer how we have it in NNV
