@@ -2,8 +2,8 @@
 % We are going to load several neural networks using the function onnx2nnv
 
 % vnn comp folder
-% vnnFolder = "/home/manzand/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
-vnnFolder = "/home/dieman95/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
+vnnFolder = "/home/manzand/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
+% vnnFolder = "/home/dieman95/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
 % To replicate the results, plesae update the vnn comp folder as well as
 % individual files (onnx) for each benchmark
 
@@ -99,4 +99,57 @@ mnist_fc2_file = 'mnist_fc/onnx/mnist-net_256x2.onnx';
 mnistOpts.InputDataFormat = 'BC';
 mnistfc2 = onnx2nnv(vnnFolder+mnist_fc2_file, mnistOpts);
 
+%% Example 8 -- nn4sys
+nn4sys_file = 'nn4sys/onnx/lindex.onnx';
+nn4sys_lindex = onnx2nnv(vnnFolder+nn4sys_file); % good
 
+nn4sys_deep_file = 'nn4sys/onnx/lindex_deep.onnx';
+nn4sys_deep_lindex = onnx2nnv(vnnFolder+nn4sys_deep_file); % good
+
+%% Example 9 -- oval21
+oval_base_file = 'oval21/onnx/cifar_base_kw.onnx';
+oval_base = onnx2nnv(vnnFolder+oval_base_file);
+
+oval_deep_file = 'oval21/onnx/cifar_deep_kw.onnx';
+oval_deep = onnx2nnv(vnnFolder+oval_deep_file);
+
+%% Example 10 -- reach_prob_density
+density_gcas_file = 'reach_prob_density/onnx/gcas.onnx';
+% density_gcas = onnx2nnv(vnnFolder+density_gcas_file); % Connections error (check which layers are getting eliminated)
+
+density_robot_file = 'reach_prob_density/onnx/robot.onnx';
+density_robot = onnx2nnv(vnnFolder+density_robot_file); % same error
+
+%% Example 11 -- rl_benchmarks
+rl_cartpole_file = 'rl_benchmarks/onnx/cartpole.onnx';
+rl_cartpole_options.InputDataFormat = 'BC';
+% rl_cartpole = onnx2nnv(vnnFolder+rl_cartpole_file, rl_cartpole_options); %flatten layer, can get rid off the first 3 layers and that would work
+
+rl_dubinsrejoin_file = 'rl_benchmarks/onnx/dubinsrejoin.onnx';
+rl_dubinsrejoin_options.InputDataFormat = 'BC';
+rl_dubinsrejoin = onnx2nnv(vnnFolder+rl_dubinsrejoin_file, rl_dubinsrejoin_options);
+
+
+%% Example 12 -- sri_resnet_a
+sri_a_file = 'sri_resnet_a/onnx/resnet_3b2_bn_mixup_adv_4.0_bs128_lr-1.onnx';
+% sri_a = onnx2nnv(vnnFolder + sri_a_file); % loads, but resnet, no support
+% Just need to add support to addition layer
+
+%% Example 13 -- sri_resnet_b
+% This will be the same as previous one
+
+%% Example 14 -- test
+
+
+%% Example 15 -- tllverifybench
+tll_1_file = 'tllverifybench/onnx/tllBench_n=2_N=M=16_m=1_instance_1_0.onnx';
+tll_options.InputDataFormat = 'BC';
+tll_options.OutputDataFormat = 'BC';
+tll_options.FoldConstants = "deep";
+tll_1 = onnx2nnv(vnnFolder + tll_1_file, tll_options);
+
+%% Example 16 -- vggnet16_2022
+vgg_file = 'vggnet16_2022/onnx/vgg16-7.onnx';
+vgg_options.OutputDataFormat = 'BC';
+vgg_options.FoldConstants = "deep";
+vgg16 = onnx2nnv(vnnFolder+vgg_file, vgg_options); % two placeholder layers that we can easily eliminate

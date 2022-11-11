@@ -70,10 +70,10 @@ for i=1:n
         if isa(L, 'nnet.cnn.layer.ClassificationOutputLayer')
             outputSize = L.OutputSize;
         end
-        replace_layers{countRep} = {Li.Name; L.Name};
-        countRep = countRep + 1;
-%         names = [names; string(L.Name)];
-%         indxs = [indxs; count-1];
+        if exist('Li','var')
+            replace_layers{countRep} = {Li.Name; L.Name};
+            countRep = countRep + 1;
+        end
         continue;
     else
         fprintf('\nParsing Layer %d... \n', i);
@@ -91,7 +91,7 @@ for i=1:n
             Li = AveragePooling2DLayer.parse(L);
         elseif isa(L, 'nnet.cnn.layer.FullyConnectedLayer')
             Li = FullyConnectedLayer.parse(L);
-            if isa(nnvLayers{end}, 'ImageInputLayer')
+            if ~isempty(nnvLayers) && isa(nnvLayers{end}, 'ImageInputLayer')
                 nnvLayers{end} = []; % remove image input layer is followed by fullyconnected layer, input is set by dimensions of weights
                 count = count -1;
             end
@@ -111,6 +111,14 @@ for i=1:n
             else
                 fprintf('Layer %d is a %s which have not supported yet in nnv, please consider removing this layer for the analysis \n', i, class(L));
                 error('Unsupported Class of Layer');
+            end
+        elseif isa(L, 'nnet.cnn.layer.FeatureInputLayer')
+            if isempty(L.Mean) && isempty(L.StandardDeviation) && isempty(L.Min) && isempty(L.Max)
+                fprintf('Layer %d is a %s class which is neglected in the analysis phase \n', i, class(L));
+                fprintf('No normalization or transformation is done on the input. \n')
+                continue;
+            else
+                Li = FeatureInputLayer.parse(); % TODO: Need to implement this
             end
         else
 %             if contains(class(L),'Flatten') && isempty(nnvLayers)
@@ -148,7 +156,11 @@ for k = 1:length(sources)
         dests{k} = sources{k};
     end
     if ~isnumeric(sources{k})
-        sources{k} = dests{k-1};
+        if k > 1
+            sources{k} = dests{k-1};
+        else
+            sources{k} = 1;
+        end
     end
 end
 
