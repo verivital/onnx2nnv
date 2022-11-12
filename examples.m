@@ -7,6 +7,10 @@ vnnFolder = "/home/manzand/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
 % To replicate the results, plesae update the vnn comp folder as well as
 % individual files (onnx) for each benchmark
 
+% Assign same reach options for all cases
+reachOptions = struct;
+reachOptions.reachMethod = 'approx-star';
+reachOptions.dis_opt = 'display'; 
 
 %% Example 1 -- ACAS Xu neural networks
 % Define file to load and loading options
@@ -25,26 +29,23 @@ y = acas1.evaluate(x);
 lb = [0;0;0;0;0];
 ub = [0;0;0;0;0];
 X = ImageStar(lb,ub);
-reachOptions = struct;
-reachOptions.reachMethod = 'approx-star';
-reachOptions.dis_opt = 'display';
 Y = acas1.reach(X, reachOptions);
 
 %% Example 2 -- carvana unets (not supported)
-% No need to run
+% No need to run (onnx support from matlan for unets is not great, leave this for the end)
 
-% carvanaSimpFile = "carvana_unet_2022/onnx/unet_simp_small.onnx";
-% try
-%     carvanaSimp = onnx2nnv(vnnFolder + carvanaSimpFile);
-% catch 
-%     warning('Unets are not yet suported');
-% end
+carvanaSimpFile = "carvana_unet_2022/onnx/unet_simp_small.onnx";
+try
+    carvanaSimp = onnx2nnv(vnnFolder + carvanaSimpFile);
+catch 
+    warning('Unets are not yet suported');
+end
 
 %% Example 3 -- CIFAR100 tinyImagenet Resnet (not supported)
 % Resnets are not yet supported, although all the layers in it are
 % Working on adding support
+% TODO: add addition / sum layer support and we can verify these
 
-% subFolder = 'cifar100_tinyimagenet_resnet/onnx';
 try
     cifarSmallFile = "cifar100_tinyimagenet_resnet/onnx/CIFAR100_resnet_small.onnx";
     cifarSmall = onnx2nnv(vnnFolder + cifarSmallFile);
@@ -62,7 +63,7 @@ end
 % This layer has ONNXParameters.NonLearnables.UnsqueezeAxesXXXX
 % Need to double check, but the numbers after that variable might be the
 % order in which the dimensions of the input to this layer "unsqueeze" to
-% form a vector for the next layer
+% form a vector for the next layer (Not true, seem to be randomly generated)
 
 cifarSimplifiedFile = "cifar2020/onnx/cifar10_2_255_simplified.onnx";
 cifarSimplified = onnx2nnv(vnnFolder + cifarSimplifiedFile);
@@ -77,7 +78,8 @@ convRelu = onnx2nnv(vnnFolder + convReluFile, convReluOpts);
 lb = zeros([32 32 3]);
 ub = zeros([32 32 3]);
 X = ImageStar(lb,ub);
-% Y = convRelu.reach(X, reachOptions); % try relax start, too slow otherwise
+% Y = convRelu.reach(X, reachOptions); % try relax start, too slow
+% otherwise (too many lp operation to solve in ReLU layers)
 
 %% Example 5 -- cifarbiasfield
 cifarBias0File = "cifar_biasfield/onnx/cifar_bias_field_0.onnx";
@@ -88,11 +90,16 @@ cifarBias0 = onnx2nnv(vnnFolder+cifarBias0File);
 rulFull20File = "collins_rul_cnn/onnx/NN_rul_full_window_20.onnx";
 rulFull20 = onnx2nnv(vnnFolder+rulFull20File);
 
-% This example looks like it has a conv2D layer that should be a fc layer
-% Need to add support for these type of occasions
-% Either convert it to a fc layer (check that filter sizes and all of that
-% match the fc), or add support within the conv2D layer. I think
-% trasformation will be easier
+% This example looks like it has a conv2D layer that should be a fc layer (could be both, fc and conv2d, easily interchangeable when parameters are right)
+% Need to add support for these type of occasions (added support for
+% special cases like when the number of filters (NumFilters = 1)
+lb = zeros(20,20,1);
+ub = zeros(20,20,1);
+X = ImageStar(lb,ub);
+Y_rul_a = rulFull20.reach(X, reachOptions); % Seems to be working
+rulOptions = reachOptions;
+rulOptions.reachMethod = 'exact-star';
+Y_rul_e = rulFull20.reach(X, reachOptions); % Seems to be working
 
 %% Example 7 --  mnist_fc
 mnist_fc2_file = 'mnist_fc/onnx/mnist-net_256x2.onnx';
@@ -132,13 +139,14 @@ rl_dubinsrejoin = onnx2nnv(vnnFolder+rl_dubinsrejoin_file, rl_dubinsrejoin_optio
 
 %% Example 12 -- sri_resnet_a
 sri_a_file = 'sri_resnet_a/onnx/resnet_3b2_bn_mixup_adv_4.0_bs128_lr-1.onnx';
-% sri_a = onnx2nnv(vnnFolder + sri_a_file); % loads, but resnet, no support
+sri_a = onnx2nnv(vnnFolder + sri_a_file); % loads, but resnet, no support
 % Just need to add support to addition layer
 
 %% Example 13 -- sri_resnet_b
 % This will be the same as previous one
 
 %% Example 14 -- test
+
 
 
 %% Example 15 -- tllverifybench
