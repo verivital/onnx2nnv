@@ -58,7 +58,7 @@ switch nargin
             GenerateCustomLayers = false;
         end
         if isfield(loadOptions, 'FoldConstants')
-                foldConstants = loadOptions.FoldConstants;
+            foldConstants = loadOptions.FoldConstants;
         else
             foldConstants = 'deep';
         end        
@@ -87,8 +87,6 @@ end
 
 %% Step 2. Convert network into NNV format
 nn = matlab2nnv(net); % Can use this separate function and add it to utils, or use a NN.parse function
-
-
 
 %% Other notes
 % Something more complicated but that may be more useful in the long term

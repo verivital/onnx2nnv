@@ -23,38 +23,14 @@ targets = unique(conns.Destination);
 if length(sources) ~= height(conns) || length(targets) ~= height(conns)
     error('Sorry, we currently do not support this type of neural networks. NNV does not support skipped or sparse connections');
 end
-% We need to update this in the future, but let's keep it simple for now
-% conns = 'default';
-% Initialize connection list again
-% we need to create a map between the name of the layer and the order iin
-% which they appear in the NN model
-% Steps to make this work:
-% 1) create a hashmap matching names to number of layers that we consider in NNV
-% 2) for layers not considered, substitute the layer name by the input name
-% 3) last step, reduce the connections table to avoid source == destination connections
+% TODO: 
+% add support to resnets and unets, at least the ones created in MATLAB
 
-%% Transform to NNV (to implement)
-% For now, just check if we could support it
-% supportLayers = ["nnet.cnn.layer.ImageInputLayer"; % List of supported layers (parse in  CNN)
-%     "nnet.cnn.layer.Convolution2DLayer";
-%     "nnet.cnn.layer.ReLULayer";
-%     "nnet.cnn.layer.BatchNormalizationLayer";
-%     "nnet.cnn.layer.MaxPooling2DLayer";
-%     "nnet.cnn.layer.AveragePooling2DLayer";
-%     "nnet.cnn.layer.FullyConnectedLayer";
-%     "nnet.cnn.layer.PixelClassificationLayer";
-%     "nnet.keras.layer.FlattenCStyleLayer";
-%     "nnet.cnn.layer.FlattenLayer";
-%     "nnet.onnx.layer.FlattenLayer";
-%     "nnet.onnx.layer.FlattenInto2dLayer";
-%     "nnet.onnx.layer.SigmoidLayer";
-%     "nnet.onnx.layer.ElementwiseAffineLayer"];
+%% Transform to NNV 
 
 n = length(Layers);
 nnvLayers = {};
 count = 1; % number of layers added to NNV
-% Initialize mapping from name to number
-% name2number = containers.Map('input', 0);
 names = [];
 indxs = [];
 replace_layers = {};
@@ -118,11 +94,11 @@ for i=1:n
                 fprintf('No normalization or transformation is done on the input. \n')
                 continue;
             else
-                Li = FeatureInputLayer.parse(); % TODO: Need to implement this
+                Li = FeatureInputLayer.parse(); % TODO: Need to create a FeatureInputLayer class and implement this
             end
+        elseif contains(class(L, "ReshapeLayer"))
+            Li = ReshapeLayer(L);
         else
-%             if contains(class(L),'Flatten') && isempty(nnvLayers)
-%                 fprintf('\nLayer %d is a %s . For this analysis, we can discard this function for now', i, class(L));
             fprintf('Layer %d is a %s which have not supported yet in nnv, please consider removing this layer for the analysis \n', i, class(L));
             error('Unsupported Class of Layer');                     
         end
