@@ -2,8 +2,8 @@
 % We are going to load several neural networks using the function onnx2nnv
 
 % vnn comp folder
-vnnFolder = "/home/manzand/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
-% vnnFolder = "/home/dieman95/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
+% vnnFolder = "/home/manzand/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
+vnnFolder = "/home/dieman95/Documents/MATLAB/vnncomp2022_benchmarks/benchmarks/";
 % To replicate the results, plesae update the vnn comp folder as well as
 % individual files (onnx) for each benchmark
 
@@ -83,7 +83,8 @@ X = ImageStar(lb,ub);
 
 %% Example 5 -- cifarbiasfield
 cifarBias0File = "cifar_biasfield/onnx/cifar_bias_field_0.onnx";
-cifarBias0 = onnx2nnv(vnnFolder+cifarBias0File);
+loadBias.InputDataFormat = "BC";
+cifarBias0 = onnx2nnv(vnnFolder+cifarBias0File, loadBias);
 % net = importONNXLayers(vnnFolder+cifarBias0File, InputDataFormats="BC");
 
 %% Example 6 -- colins_rul_cnn
@@ -103,8 +104,8 @@ Y_rul_e = rulFull20.reach(X, reachOptions); % Seems to be working
 
 %% Example 7 --  mnist_fc
 mnist_fc2_file = 'mnist_fc/onnx/mnist-net_256x2.onnx';
-mnistOpts.InputDataFormat = 'BC';
-mnistfc2 = onnx2nnv(vnnFolder+mnist_fc2_file, mnistOpts);
+mnistOpts.InputDataFormat = "BTC'";
+% mnistfc2 = onnx2nnv(vnnFolder+mnist_fc2_file, mnistOpts); % UPDATE matlab2nnv to remove useless layers in the beginning
 
 %% Example 8 -- nn4sys
 nn4sys_file = 'nn4sys/onnx/lindex.onnx';
@@ -125,7 +126,7 @@ density_gcas_file = 'reach_prob_density/onnx/gcas.onnx';
 % density_gcas = onnx2nnv(vnnFolder+density_gcas_file); % Connections error (check which layers are getting eliminated)
 
 density_robot_file = 'reach_prob_density/onnx/robot.onnx';
-density_robot = onnx2nnv(vnnFolder+density_robot_file); % same error
+% density_robot = onnx2nnv(vnnFolder+density_robot_file); % same error
 
 %% Example 11 -- rl_benchmarks
 rl_cartpole_file = 'rl_benchmarks/onnx/cartpole.onnx';
