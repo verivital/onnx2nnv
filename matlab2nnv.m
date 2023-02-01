@@ -127,7 +127,9 @@ for k= 1:length(sources)
 end
 
 % Change all other connections to previous layer
-for k = 1:length(sources)
+k = 1;
+nS = length(sources);
+while k <= nS
     if ~isnumeric(dests{k})
         dests{k} = sources{k};
     end
@@ -137,7 +139,9 @@ for k = 1:length(sources)
         else
             sources{k} = 1;
         end
+        k = k-1;
     end
+    k = k+1;
 end
 
 % Remove all duplicate connections
