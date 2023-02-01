@@ -96,8 +96,8 @@ for i=1:n
             else
                 Li = FeatureInputLayer.parse(); % TODO: Need to create a FeatureInputLayer class and implement this
             end
-        elseif contains(class(L, "ReshapeLayer"))
-            Li = ReshapeLayer(L);
+        elseif contains(class(L), "ReshapeLayer")
+            Li = ReshapeLayer.parse(L);
         else
             fprintf('Layer %d is a %s which have not supported yet in nnv, please consider removing this layer for the analysis \n', i, class(L));
             error('Unsupported Class of Layer');                     

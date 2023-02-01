@@ -55,7 +55,7 @@ switch nargin
         if isfield(loadOptions, 'GenerateCustomLayers')
             GenerateCustomLayers = loadOptions.GenerateCustomLayers;
         else
-            GenerateCustomLayers = false;
+            GenerateCustomLayers = true;
         end
         if isfield(loadOptions, 'FoldConstants')
             foldConstants = loadOptions.FoldConstants;
