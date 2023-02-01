@@ -1,0 +1,235 @@
+***** acasxu *****
+
+Input is saved as an image input layer, but MATLAB is failing to properly handle this. It creates a custom 
+flatten layer. In this case, it is easy to deal with it because the first 4 "layers" are useless (no info really),
+so we can just start parsing the NN from the first fully connected. Can get the inout and output info from the weight matrices.
+Just need to add some functions that can detect sometie useful layers as useless layers, and then the following flatten ones
+can also be discarded in NNV.
+
+>> net = importONNXNetwork('../vnncomp2022_benchmarks/benchmarks/acasxu/onnx/ACASXU_run2a_1_8_batch_2000.onnx',FoldConstants="deep", InputDataFormats='BSSC');
+
+This command works, and it only creates a flatten layer that we can easily get rid off.
+
+
+------------------------------------------------------------
+
+
+***** carvana_unet_2022 *****
+
+The following commands may work:
+
+>> net = importONNXNetwork('../vnncomp2022_benchmarks/benchmarks/carvana_unet_2022/onnx/unet_simp_small.onnx',FoldConstants="deep", OutputLayerType='classification', TargetNetwork='dlnetwork');
+
+>> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/carvana_unet_2022/onnx/unet_simp_small.onnx',FoldConstants="deep", InputDataFormats='BSSC', OutputLayerType='classification');
+
+>> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/carvana_unet_2022/onnx/unet_simp_small.onnx',FoldConstants="deep", OutputLayerType='classification');
+
+
+They return a network/layergraph with no errors, all have the same output. The problem is there are two custom layers in simp and 4 in the upsample one. These seem like tehy may require some extra work very difficult to automate. Is these layers are in the input or output, it could get done, but in the middle... I'm not so sure.
+
+
+------------------------------------------------------------
+
+
+***** cifar100_tinyimagenet_resnet *****
+
+No errors when loading the networks in many different ways, even with no custom layers, so we should be good. We just need to 
+check later if NNV supports all the layers.
+
+
+
+------------------------------------------------------------
+
+
+***** cifar2020 *****
+
+cifar10_2_255.onnx
+
+Creates a Gemm layer at the output
+Gemm => General matrix mutiplication, https://github.com/onnx/onnx/blob/main/docs/Operators.md#Gemm 
+
+We can avoid this one by specifying input and output data formats
+
+>> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/cifar2020/onnx/cifar10_2_255.onnx',FoldConstants="deep", OutputDataFormats='BC', InputDataFormats='BCSS');
+
+This creates a single custom reshape layer with no parameters, what we want
+
+cifar10_2_255_simplified.onnx
+
+We should be good for this one.
+
+cifar10_8_255.onnx
+
+Same as cifar10_2_255.onnx
+
+cifar10_8_255_simplified.onnx
+
+We should be good for this one.
+
+convBigRELU__PGD.onnx
+
+The following works with no custom layers
+net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/cifar2020/onnx/convBigRELU__PGD.onnx',FoldConstants="deep", OutputDataFormats='BC', InputDataFormats='BCSS');
+
+
+------------------------------------------------------------
+
+
+***** cifar_biasfield *****
+
+cifar_base.onnx
+
+Succesful in many ways
+
+All the other cifar_bias networks seem to have a reshape layer we should be able to handle. The output of the reshape layer is encoded in the ONNXParams. Nonlearnables. The permutation of the dimensions is encoded in the created function.
+
+>> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/cifar_biasfield/onnx/cifar_bias_field_13.onnx',FoldConstants="deep", InputDataFormats='BC');
+
+
+------------------------------------------------------------
+
+
+***** collins_rul_cnn *****
+
+Can load all of them, no problem (Probably created in MATLAB)
+
+
+------------------------------------------------------------
+
+
+***** mnist_fc *****
+
+>> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/mnist_fc/onnx/mnist-net_256x6.onnx',FoldConstants="deep", OutputDataFormats='BC');
+
+In this case, there is a flatten layer because the input is understood to be as [1, 784, 1], but since the first layer is a fullyconnected layer, we can discard the flatten layer and set the input of the network as the input of the first layer.
+
+
+------------------------------------------------------------
+
+
+***** nn4sys *****
+
+lindex.onnx
+lindex_deep.onnx
+
+Supported
+
+net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/nn4sys/onnx/lindex_deep.onnx',FoldConstants="deep", OutputDataFormats='BC');
+
+The other 4 have slice layers and divisible layers. We cannot support these for now in NNV, so probably don't need a ONNX parser to support this yet.
+
+
+------------------------------------------------------------
+
+
+***** oval21 *****
+
+All 3 are supported, no problem.
+
+
+------------------------------------------------------------
+
+
+***** reach_prob_density *****
+
+>> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/reach_prob_density/onnx/vdp.onnx' ,FoldConstants="deep", OutputDataFormats='BC');
+
+That command works for all 3 networks
+
+Elapsed time is 10.838182 seconds.
+------------------------------------------------------------
+
+
+***** rl_benchmarks *****
+
+net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/rl_benchmarks/onnx/dubinsrejoin.onnx' ,FoldConstants="deep", OutputDataFormats='BC', InputDataFormats='BC');
+
+This command works for all 3 of them, but need to "discard" the initial flatten layer in two of them.
+
+
+------------------------------------------------------------
+
+
+***** sri_resnet_a *****
+
+resnet_3b2_bn_mixup_adv_4.0_bs128_lr-1.onnx
+
+Looks good, multiple ways.
+
+
+------------------------------------------------------------
+
+
+***** sri_resnet_b *****
+
+resnet_3b2_bn_mixup_ssadv_4.0_bs128_lr-1_v2.onnx
+
+Looks good, multiple ways.
+
+
+------------------------------------------------------------
+
+
+***** tllverifybench *****
+
+Seems like they are all supported.
+
+>> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/tllverifybench/onnx/tllBench_n=2_N=M=64_m=1_instance_7_2.onnx' ,FoldConstants="deep", OutputDataFormats='BC', InputDataFormats='BC');
+
+
+
+------------------------------------------------------------
+
+
+***** vggnet16_2022 *****
+
+vgg16-7.onnx
+
+>> net = importONNXLayers('../vnncomp2022_benchmarks/benchmarks/vggnet16_2022/onnx/vgg16-7.onnx' ,FoldConstants="deep", OutputDataFormats='BC');
+
+This works, but still creates 2 flatten layers. Although I don't understand why... These are created in between fc layers, there should be no need to have those there, we should be able to discard them directly.
+As far as I can tell, those layers do nothing.
+
+------------------------------------------------------------
+Elapsed time is 2623.656466 seconds.
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+***** WHAT THIS MEANS *****
+Importing the network directly brings many difficulties along. Set the default method to be importONNXLayers, then make the user specify InputDataFormats and OutputDataFormats (point to MATLAB doc for this).
+
+NNs we should directly be able to load into MATLAB/NNV
+    50 (acasxu)
+    32 (tllverifybench)
+    1 (vgg16_2022)
+    2 (sri_resnet)
+    3 (rl_benchmarks)
+    3 (reach_prob_density)
+    3 (oval_21)
+    2 (nn4sys, no div or slice)
+    3 (mnist_fc)
+    3 (collins)
+    1 (cifar_bias_filed base NN)
+    5 (cifar2020)
+    5 (cifar_tinyimagenet_resnet)
+    
+
+NNs that may be possible, but some extra work reading into the custom layer functions:
+    71 (cifar_bias_field)
+    
+    
+NNs that are not looking good
+    4 (nn4sys, div and slice custom layers)
+    3 (carvana)
+
+
+Total = 191
+Direct support = 113, about 60%
+Maybes = 71
+Should support = 184, about 96%
+No support = 7, about 3.5%
