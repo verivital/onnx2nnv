@@ -9,7 +9,7 @@ end
 %% Process input types
 % Input is a MATLAB type neural network (layergraph, seriesNetwork, dlnetwork or dagnetwork)
 if ntype== "SeriesNetwork"
-    conns = LayerGraph(Mnetwork).Connections; % get the table of connections
+    conns = layerGraph(Mnetwork).Connections; % get the table of connections
 else
     conns = Mnetwork.Connections; % get the table of connections
 end
