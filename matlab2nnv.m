@@ -96,6 +96,12 @@ for i=1:n
             else
                 Li = FeatureInputLayer.parse(); % TODO: Need to create a FeatureInputLayer class and implement this
             end
+        elseif isa(L, 'nnet.cnn.layer.TransposedConvolution2DLayer')
+            Li = TransposedConv2DLayer.parse(L);
+        elseif isa(L, 'nnet.cnn.layer.MaxUnpooling2DLayer')
+            Li = MaxUnpooling2DLayer.parse(L, conns);
+%             pairedMaxPoolingName = NN.getPairedMaxPoolingName(connects, Li.Name);
+%             Li.setPairedMaxPoolingName(pairedMaxPoolingName);
         elseif contains(class(L), "ReshapeLayer")
             Li = ReshapeLayer.parse(L);
         else
